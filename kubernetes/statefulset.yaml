@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pokemons-service
+spec:
+  serviceName: "pokemons-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pokemons-service
+  template:
+    metadata:
+      labels:
+        app: pokemons-service
+    spec:
+      initContainers:
+      - name: init-db
+        image: python:3.9-slim
+        command: ["/bin/sh", "/scripts/init-db.sh"]
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+      containers:
+      - name: pokemons-service
+        image: pokemons-service:latest
+        # to use a private dockerhub account specify the image like this: dockerhubaccountname/pokemons-service:latest
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          #imagePullSecrets:
+          #- name: dockerhub-credentials
+        imagePullPolicy: IfNotPresent
+      volumes:
+      - name: scripts
+        configMap:
+          name: db-init-scripts
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi

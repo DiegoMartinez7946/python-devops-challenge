@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-scripts
+data:
+  init-db.sh: |
+    #!/bin/sh
+
+    DB_PATH="/data/pokemons.db"
+
+    # Install sqlite
+    apt-get update && apt-get install -y sqlite3
+
+    # Check if table 'pokemons' exists
+    if ! sqlite3 $DB_PATH "SELECT name FROM sqlite_master WHERE type='table' AND name='pokemons';" | grep -q 'pokemons'; then
+        # Initialize the database
+        echo "Initializing database..."
+        sqlite3 $DB_PATH "CREATE TABLE pokemons (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(100) NOT NULL, type VARCHAR(50) NOT NULL);"
+        sqlite3 $DB_PATH "INSERT INTO pokemons (name, type) VALUES ('Pikachu', 'Electric'),('Charmander', 'Fire');"
+    else
+        echo "Database already initialized."
+    fi
